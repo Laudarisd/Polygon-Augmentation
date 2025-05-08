@@ -498,11 +498,20 @@ class PolygonAugmentation:
         # Define the base augmentation pipeline
         augmentation_transform = A.Compose([
             A.Rotate(limit=augmentation_params.get("angle_limit", 10), p=augmentation_params.get("p_rotate", 1.0)),
-            A.HorizontalFlip(p=augmentation_params.get("p_flip_h", 0.5)),
-            A.VerticalFlip(p=augmentation_params.get("p_flip_v", 0.5)),
-            A.Affine(scale=(0.95, 1.05), translate_percent=(-0.05, 0.05), p=augmentation_params.get("p_scale", 0.5)),
+            A.HorizontalFlip(p=augmentation_params.get("p_flip_h", 0.0)),  # Default to 0.0 to disable
+            A.VerticalFlip(p=augmentation_params.get("p_flip_v", 0.0)),    # Default to 0.0 to disable
+            A.Affine(scale=(0.8, 1.2), translate_percent=(-0.05, 0.05), p=augmentation_params.get("p_scale", 0.5)),
+            A.RandomBrightnessContrast(
+                brightness_limit=augmentation_params.get("brightness_limit", 0.2),
+                contrast_limit=augmentation_params.get("contrast_limit", 0.2),
+                p=augmentation_params.get("p_brightness", 0.5)
+            ),
+            A.PixelDropout(
+                dropout_prob=augmentation_params.get("mosaic_dropout_prob", 0.1),
+                per_channel=False,
+                p=augmentation_params.get("p_mosaic", 0.3)
+            ),
         ])
-
         processed_count = 0  # Counter for successful augmentations
 
         # Get all JSON files
@@ -602,25 +611,30 @@ if __name__ == "__main__":
         "angle_limit": 20,
         "p_crop": 0.7,
         "p_rotate": 1.0,
-        "p_flip_h": 0.5,
-        "p_flip_v": 0.5,
-        "p_scale": 0.6,
-        "random_aug_per_type": 5
+        "p_flip_h": 0,
+        "p_flip_v": 0,
+        "p_scale": 0.8,
+        "brightness_limit": 0.1,  # Range for brightness adjustment
+        "contrast_limit": 0.1,    # Range for contrast adjustment
+        "p_brightness": 0.1,      # Probability of applying brightness/contrast
+        "mosaic_dropout_prob": 0.05,  # Probability of dropping pixels for mosaic effect
+        "p_mosaic": 0.1,           # Probability of applying mosaic effect
+        "random_aug_per_type": 10
     }
     
     # Step 2: create an instance of your augmentor class
     augmentor = PolygonAugmentation(
-        tolerance=2.0,        # you can change if needed
-        area_threshold=0.01,  # you can change if needed
-        debug=False            # set True to see debug prints
+        tolerance=2.0,       
+        area_threshold=0.01,  
+        debug=False            
     )
     
     # Step 3: call the method
     augmentor.augment_dataset(
-        data_dir="for_augmentation/dwg_mode/images",
-        json_dir="for_augmentation/dwg_mode/labels",
+        data_dir="for_augmentation/img_mode/images",
+        json_dir="for_augmentation/img_mode/labels",
         save_img_dir="for_augmentation/images",
         save_json_dir="for_augmentation/labels",
-        num_augmentations="random",   # or you can say 3, 5, etc.
+        num_augmentations=10,   # or say 'random' or 3, or 5, etc.
         augmentation_params=augmentation_params
     )
